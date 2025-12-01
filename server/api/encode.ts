@@ -3,25 +3,28 @@ import * as z from 'zod'
 
 const QRRequestSchema = z.object({
   message: z.string().min(1, 'Message is required'),
-  width: z.number().min(50).max(1000).optional(),
-  margin: z.number().min(0).max(10).optional(),
+  width: z.number().min(50).max(1000).default(200),
+  margin: z.number().min(0).max(10).default(1),
   color: z.object({
     dark: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, 'Invalid dark color hex code'),
     light: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, 'Invalid light color hex code'),
-  }).optional(),
+  }).default({
+    dark: '#000000',
+    light: '#FFFFFF',
+  }),
 })
 
-async function generateQR(
-  text: string, 
-  width: number, 
-  margin: number, 
+async function generateQR(options: {
+  text: string,
+  width: number,
+  margin: number,
   color: { dark: string, light: string }
-) {
+}) {
   try {
-    return await QRCode.toDataURL(text, { 
-      width, 
-      margin,
-      color 
+    return await QRCode.toDataURL(options.text, { 
+      width: options.width, 
+      margin: options.margin,
+      color: options.color
     })
   }
   catch (err) {
@@ -41,18 +44,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: parsedBody.error.issues.map((e: { message: any }) => e.message).join(', ') })
   }
 
-  const message = parsedBody.data.message
-  if (!message) {
-    throw createError({ statusCode: 400, statusMessage: 'Message is required' })
-  }
+  const { message, width, margin, color } = parsedBody.data
 
-  const width = parsedBody.data.width || 200
-  const margin = parsedBody.data.margin || 1
-  const color = parsedBody.data.color || {
-    dark: '#000000',
-    light: '#FFFFFF',
-  }
-
-  const qrCode = await generateQR(message, width, margin, color)
+  const qrCode = await generateQR({ text: message, width, margin, color })
   return qrCode
 })
