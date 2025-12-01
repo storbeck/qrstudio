@@ -12,5 +12,5 @@ export default defineNuxtConfig({
     vue: {
       template: { transformAssetUrls },
     },
-  }
+  },
 })

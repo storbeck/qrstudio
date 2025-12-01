@@ -6,14 +6,15 @@ const QRRequestSchema = z.object({
   width: z.number().min(50).max(1000).optional(),
   color: z.object({
     dark: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, 'Invalid dark color hex code'),
-    light: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, 'Invalid light color hex code')
-  }).optional()
+    light: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, 'Invalid light color hex code'),
+  }).optional(),
 })
 
-const generateQR = async (text: string, width: number, color: { dark: string, light: string }) => {
+async function generateQR(text: string, width: number, color: { dark: string, light: string }) {
   try {
-    return await QRCode.toDataURL(text, { width: width, color: color })
-  } catch (err) {
+    return await QRCode.toDataURL(text, { width, color })
+  }
+  catch (err) {
     console.error(err)
     return null
   }
@@ -23,7 +24,6 @@ export default defineEventHandler(async (event) => {
   if (event.node.req.method !== 'POST') {
     throw createError({ statusCode: 405, statusMessage: 'Method Not Allowed' })
   }
-
 
   const body = await readBody(event)
   const parsedBody = QRRequestSchema.safeParse(body)
@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
   const width = parsedBody.data.width || 200
   const color = parsedBody.data.color || {
     dark: '#000000',
-    light: '#FFFFFF'
+    light: '#FFFFFF',
   }
 
   const qrCode = await generateQR(message, width, color)

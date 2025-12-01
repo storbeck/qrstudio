@@ -1,8 +1,8 @@
 interface QRCodeObject {
-    message: string;
-    width?: number;
-    color?: {
-        dark: string;
-        light: string;
-    };
+  message: string
+  width?: number
+  color?: {
+    dark: string
+    light: string
+  }
 }

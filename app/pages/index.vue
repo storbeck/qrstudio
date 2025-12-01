@@ -1,123 +1,81 @@
-<template>
-    <v-container>
-        <div class="d-flex gap-4">
-            <v-text-field 
-                v-model="name" 
-                :disabled="pending" 
-                label="Message to encode" 
-                flat
-                variant="solo"
-                class="border"
-                hide-details
-            >
-                <template #append>
-                    <v-btn 
-                        :disabled="pending"
-                        color="primary"
-                        type="submit"
-                        @click="generateQRCode"
-                    >
-                        Generate QRCode
-                    </v-btn>
-                </template>
-            </v-text-field>    
-        </div>
-        <v-expansion-panels>
-            <v-expansion-panel>
-                <template #title>
-                    Advanced Options
-                </template>
-                <template #text>
-                    <div>
-                        <!-- width, lightcolor, darkcolor -->
-                        <v-text-field 
-                            v-model="width"
-                            label="Width (px)" 
-                            flat
-                            variant="solo"
-                            class="border mb-4"
-                            hide-details
-                        />
-                        <v-text-field 
-                            v-model="lightColor"
-                            label="Light Color (hex)" 
-                            flat
-                            variant="solo"
-                            class="border mb-4"
-                            hide-details
-                        />
-                        <v-text-field 
-                            v-model="darkColor"
-                            label="Dark Color (hex)" 
-                            flat
-                            variant="solo"
-                            class="border mb-4"
-                            hide-details
-                        />
-                    </div>
-                </template>
-            </v-expansion-panel>
-        </v-expansion-panels>
-        <v-progress-circular
-            v-if="pending"
-            indeterminate
-            color="primary"
-        />
-        <img 
-            v-if="data" 
-            :src="data" 
-            alt="QR Code"
-        >
-    </v-container>
-</template>
-
-<script setup lang="ts">
-const name = ref('');
+<script setup>
+import { ref } from 'vue';
 const message = ref('');
-const data = ref('')
-const pending = ref(false);
 const width = ref(300);
 const darkColor = ref('#000000');
-const lightColor = ref('#FFFFFF');
-const errorMessage = ref('');
+const lightColor = ref('#ffffff');
+const valid = ref(false);
+const qrcodeData = ref(null);
+const pending = ref(false);
 
-async function generateQRCode() {
-    if (!name.value.trim()) return;
-    pending.value = true;
-    message.value = '';
-    try {
-        const widthValue = Number(width.value);
-        const hasValidWidth =  Number.isFinite(widthValue) && widthValue >= 50 && widthValue <= 1000;
-        const dark = darkColor.value.trim();
-        const light = lightColor.value.trim();
-
-        const body: QRCodeObject = {
-            message: name.value.trim(),
-        };
-
-        if (hasValidWidth) {
-            body.width = widthValue;
-        }
-
-        // Only send colors if both are provided; zod requires both keys when color is present.
-        if (dark && light) {
-            body.color = { dark, light };
-        }
-
-        const response = await $fetch(`/api/encode`, {
-            method: 'POST',
-            body,
-        });
-        data.value = response ?? '';
-    } catch (error) {
-        message.value = 'Error generating QR code';
-        errorMessage.value = '';
-        if (error.statusCode === 400) {
-            errorMessage.value = error.statusMessage || 'Invalid input';
-        }
-        console.error(error);
-    } finally {
-        pending.value = false;
-    }
+async function submit() {
+  pending.value = true;
+  try {
+    const response = await $fetch('/api/encode', {
+      method: 'POST',
+      body: {
+        message: message.value,
+        width: width.value,
+        color: {
+          dark: darkColor.value,
+          light: lightColor.value,
+        },
+      },
+    })
+    qrcodeData.value = response;
+  } catch (error) {
+    console.error('Error generating QR Code:', error);
+  } finally {
+    pending.value = false;
+  }
 }
+
 </script>
+<template>
+  <v-container>
+    <v-form validate-on="submit" @submit.prevent @submit="submit" v-model="valid">
+      <v-text-field
+        v-model="message"
+        label="Message to encode"
+        autofocus
+        :rules="[
+          v => !!v || 'Message is required',
+          v => (v && v.length <= 1000) || 'Message must be less than 1000 characters',
+        ]"
+      >
+        <template #append>
+          <v-btn color="primary" type="submit"> Generate QRCode </v-btn>
+        </template>
+      </v-text-field>
+
+      <v-spacer />
+
+      <v-expansion-panels>
+        <v-expansion-panel>
+          <template #title> Advanced Options </template>
+          <template #text>
+            <div>
+              <!-- width, lightcolor, darkcolor -->
+              <v-number-input
+                v-model="width"
+                label="Width (px)"
+                :min="10"
+                :max="1000"
+              />
+              <v-color-input
+                v-model="darkColor"
+                label="Dark Color"
+              />
+              <v-color-input
+                v-model="lightColor"
+                label="Light Color"
+              />
+            </div>
+          </template>
+        </v-expansion-panel>
+      </v-expansion-panels>
+    </v-form>
+    <v-progress-circular v-if="pending" indeterminate color="primary" />
+    <img v-if="qrcodeData" :src="qrcodeData" alt="QR Code" />
+  </v-container>
+</template>
