@@ -173,7 +173,3 @@ async function submit () {
     </v-main>
   </v-layout>
 </template>
-
-<style scoped>
-
-</style>
