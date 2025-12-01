@@ -1,5 +1,5 @@
 {
-  "name": "qrgen",
+  "name": "qrstudio",
   "type": "module",
   "private": true,
   "scripts": {
