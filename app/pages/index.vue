@@ -4,6 +4,7 @@ const message = ref('');
 const width = ref(300);
 const darkColor = ref('#000000');
 const lightColor = ref('#ffffff');
+const margin = ref(1);
 const valid = ref(false);
 const qrcodeData = ref(null);
 const pending = ref(false);
@@ -16,6 +17,7 @@ async function submit() {
       body: {
         message: message.value,
         width: width.value,
+        margin: margin.value,
         color: {
           dark: darkColor.value,
           light: lightColor.value,
@@ -61,6 +63,12 @@ async function submit() {
                 label="Width (px)"
                 :min="10"
                 :max="1000"
+              />
+              <v-number-input
+                v-model="margin"
+                label="Margin"
+                :min="0"
+                :max="10"
               />
               <v-color-input
                 v-model="darkColor"
